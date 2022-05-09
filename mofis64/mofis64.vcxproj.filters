@@ -33,12 +33,33 @@
     <ClInclude Include="stbimage\stb_image_resize.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="FlowCam\IInterface.h">
+    <ClInclude Include="camera_control.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="Logwindows.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="laser_control.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="NativeVision.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="CellDetect.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="Flowcam\IInterface.h">
       <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="mofis64.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="NativeVision.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="CellDetect.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>
