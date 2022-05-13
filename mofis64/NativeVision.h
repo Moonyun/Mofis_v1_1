@@ -38,7 +38,7 @@ public:
 	bool Init();
 	uint32_t GetDeviceNum();
 	std::vector<CellInfo> GetFrame(bool bSave, bool bSaveAsync, const std::string inSaveName, const std::string inSaveRootPath);
-	bool GetImages(int inId, int inSecond, const std::string inName, bool inBSave);
+	bool GetImages(int inId, int inSecond, const std::string inName, bool inBSave,const int ins);
 	void AnalyzeImages(const std::string inSampleName, const std::string inRootPath, bool save_cell, bool save_original_img);
 	bool SetCamParas(int inWidth, int inHeight, int inOffsetX, double inExposureTime, double inAcquisitionFrameRate);
 	bool StartCapture();
@@ -55,7 +55,10 @@ public:
 	int GetTotalImageSize();
 	std::vector<CellInfo> GetTotalCells();
 	void Clear();
+	void AnalyzeImages0_9(const std::string inSampleName, const std::string inRootPath, const int ins, bool insave_cell, bool save_original_img);
+
 private:
+
 	CellDetect m_celldetect;
 	std::string m_save_path;
 	int m_num;
@@ -78,9 +81,18 @@ private:
 	LogWindows* m_log_window;
 	int m_class_num;
 	int m_detect_image_preview_num;
+
 	std::vector<ImageInfo> m_total_images;
+	std::vector<ImageInfo> m_s_images[10];
+
+
 	std::vector<CellInfo> m_total_cells;
-	float m_analyze_progress = 0.0;
+
+	std::vector<CellInfo> m_s_cells[10];
+
+
+
+	float m_analyze_progress[10] = { 0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0 };
 
 
 

@@ -51,6 +51,7 @@ int g_flow_p2;                        //液路的para2
 int g_flow_p3;                        //液路的para3
 
 int g_status;                        //全局状态表示
+int g_s = 0;
 int g_posID = 0;                     //样本Id
 bool g_savecells = TRUE;            //代表是否保存细胞图像
 bool g_saveallimgs = false;
@@ -170,7 +171,7 @@ void GetImage(NativeVision* in_camera) {
                     second++;
                 }
 
-                if (in_camera->GetImages(g_posID, second, std::string(time_info_buffer), g_GetImgs)) {
+                if (in_camera->GetImages(g_posID, second, std::string(time_info_buffer), g_GetImgs , g_s)) {
                     //g_img_per_second++;
                 }
             }
@@ -287,6 +288,7 @@ int StatusParamUpdata(int inFlow_p0, int inFlow_p1, bool inStart_flow)
     else{ return 15;}                                              //未知
     
 }
+
 void ClearPlot() {
    
     ClearVector(g_cell_total_array);
@@ -407,6 +409,16 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     float t_time_clock = 0;                         //代表已测试时间
     bool sample_flowing = FALSE;                    //点击开始测试到结束这段时间为Ture
     bool b_able_analyze = false;                     //样本测量结束后为ture，进入分析后变为false且其余时间为false
+    bool b_able_analyze0 = false;
+    bool b_able_analyze1 = false;
+    bool b_able_analyze2 = false;
+    bool b_able_analyze3 = false;
+    bool b_able_analyze4 = false;
+    bool b_able_analyze5 = false;
+    bool b_able_analyze6 = false;
+    bool b_able_analyze7 = false;
+    bool b_able_analyze8 = false;
+    bool b_able_analyze9 = false;
     float flow_pogress_1 = 0;                            //测试进度
     float analyze_progress_2 = 0;                        //分析进度
 
@@ -427,7 +439,6 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     std::make_tuple(u8"已采集图像",0.0,""),
     std::make_tuple(u8"已采集细胞",0.0,""),
     std::make_tuple(u8"状态参数",0.0,""),
-
     };
     
 
@@ -444,18 +455,14 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     GLuint tex_id_preview = 0;
 
     //连接相机并获取相机照片
-    std::thread thread_save_img = std::thread(GetImage, Vision);
-    thread_save_img.detach();
-
-
-
+    std::thread thread_get_img = std::thread(GetImage, Vision);
+    thread_get_img.detach();
 
 
     while (!glfwWindowShouldClose(window)) 
     {
 
         //状态参数更新传递
-
         g_status = StatusParamUpdata(g_flow_p0,g_flow_p1,sample_flowing);    //状态
         if (g_status == 6) {                                       //计时并开始采集存储
             if (t_time_clock == 0) {
@@ -478,6 +485,9 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
             progress_bar_color = green_color;
         }
         analyze_progress_2 = Vision->GetAnalyzeProgress();
+
+        g_s = int(flow_pogress_1 / 0.1);
+
         px = pos % 8 + 1;
         py = int(pos / 8) + 1;
         save_time = MIN(atoi(save_time_cstr) * 1000, volume_array[volume_current] / speed_array[speed_current_elem] * 60 * 1000); // 设定时间不得超过最大时间
@@ -540,6 +550,16 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
                 g_flow->CollectStart(volume_array[volume_current], speed_array[speed_current_elem], 0, py, px);
                 sample_flowing = TRUE;   //样本开始流动
                 b_able_analyze = TRUE;  //可以分析，分析预准备
+                b_able_analyze0 = true;
+                b_able_analyze1 = true;
+                b_able_analyze2 = true;
+                b_able_analyze3 = true;
+                b_able_analyze4 = true;
+                b_able_analyze5 = true;
+                b_able_analyze6 = true;
+                b_able_analyze7 = true;
+                b_able_analyze8 = true;
+                b_able_analyze9 = true;
                 ClearPlot();
                 Vision->Clear();
                 flow_pogress_1 = 0;
@@ -580,12 +600,73 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
             }
 
             //图像分析
-            if ((b_able_analyze && flow_pogress_1 >0.99))
+            //if ((b_able_analyze && flow_pogress_1 >0.99))
+            //{
+            //    std::thread thread_analyze(&NativeVision::AnalyzeImages, Vision, "1", g_file_path, g_savecells, g_saveallimgs);
+            //    thread_analyze.detach();
+            //    b_able_analyze = false;              //保证只分析一次
+            //}
+            if ((b_able_analyze0 && g_s==1))
             {
-                std::thread thread_analyze(&NativeVision::AnalyzeImages, Vision, "1", g_file_path, g_savecells, g_saveallimgs);
-                thread_analyze.detach();
-                b_able_analyze = false;              //保证只分析一次
+                std::thread thread_analyze0(&NativeVision::AnalyzeImages0_9, Vision, "1", g_file_path,0, g_savecells, g_saveallimgs);
+                thread_analyze0.detach();
+                b_able_analyze0 = false;              //保证只分析一次
             }
+            if ((b_able_analyze1 && g_s == 2))
+            {
+                std::thread thread_analyze1(&NativeVision::AnalyzeImages0_9, Vision, "1", g_file_path, 1, g_savecells, g_saveallimgs);
+                thread_analyze1.detach();
+                b_able_analyze1 = false;              //保证只分析一次
+            }
+            if ((b_able_analyze2 && g_s == 3))
+            {
+                std::thread thread_analyze2(&NativeVision::AnalyzeImages0_9, Vision, "1", g_file_path, 2, g_savecells, g_saveallimgs);
+                thread_analyze2.detach();
+                b_able_analyze2 = false;              //保证只分析一次
+            }
+            if ((b_able_analyze3 && g_s == 4))
+            {
+                std::thread thread_analyze3(&NativeVision::AnalyzeImages0_9, Vision, "1", g_file_path, 3, g_savecells, g_saveallimgs);
+                thread_analyze3.detach();
+                b_able_analyze3 = false;              //保证只分析一次
+            }
+            if ((b_able_analyze4 && g_s == 5))
+            {
+                std::thread thread_analyze4(&NativeVision::AnalyzeImages0_9, Vision, "1", g_file_path, 4, g_savecells, g_saveallimgs);
+                thread_analyze4.detach();
+                b_able_analyze4 = false;              //保证只分析一次
+            }
+            if ((b_able_analyze5 && g_s == 6))
+            {
+                std::thread thread_analyze5(&NativeVision::AnalyzeImages0_9, Vision, "1", g_file_path, 5, g_savecells, g_saveallimgs);
+                thread_analyze5.detach();
+                b_able_analyze5 = false;              //保证只分析一次
+            }
+            if ((b_able_analyze6 && g_s == 7))
+            {
+                std::thread thread_analyze6(&NativeVision::AnalyzeImages0_9, Vision, "1", g_file_path, 6, g_savecells, g_saveallimgs);
+                thread_analyze6.detach();
+                b_able_analyze6 = false;              //保证只分析一次
+            }
+            if ((b_able_analyze7 && g_s == 8))
+            {
+                std::thread thread_analyze7(&NativeVision::AnalyzeImages0_9, Vision, "1", g_file_path, 7, g_savecells, g_saveallimgs);
+                thread_analyze7.detach();
+                b_able_analyze7 = false;              //保证只分析一次
+            }
+            if ((b_able_analyze8 && g_s == 9))
+            {
+                std::thread thread_analyze8(&NativeVision::AnalyzeImages0_9, Vision, "1", g_file_path, 8, g_savecells, g_saveallimgs);
+                thread_analyze8.detach();
+                b_able_analyze8 = false;              //保证只分析一次
+            }
+            if ((b_able_analyze9 && g_s == 10))
+            {
+                std::thread thread_analyze9(&NativeVision::AnalyzeImages0_9, Vision, "1", g_file_path, 9, g_savecells, g_saveallimgs);
+                thread_analyze9.detach();
+                b_able_analyze9 = false;              //保证只分析一次
+            }
+
             //分析完成后导入数据
             if (Vision->GetTotalImageSize() == 0 && g_cell_dia_array.size() == 0) {
                 // clear display tex id 

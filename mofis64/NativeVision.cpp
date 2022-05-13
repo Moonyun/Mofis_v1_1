@@ -267,7 +267,7 @@ int NativeVision::Filter(filter_info inSetfilter, const std::string inStore_path
 
 
 //捕获图像
-bool NativeVision::GetImages(int inId, int inSecond, const std::string inName, bool inBGet) {
+bool NativeVision::GetImages(int inId, int inSecond, const std::string inName, bool inBGet ,const int ins) {
 
 	bool b_time_to_preview = false;
 	if (std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now() - m_time_old).count() > image_preview_interval) {
@@ -283,7 +283,6 @@ bool NativeVision::GetImages(int inId, int inSecond, const std::string inName, b
 		{
 			return false;
 		}
-
 		else {
 			if (pStreamSource != NULL) {
 				ret = pStreamSource->getFrame(pStreamSource, &pFrame, 1);
@@ -313,8 +312,9 @@ bool NativeVision::GetImages(int inId, int inSecond, const std::string inName, b
 					image_info.m_id = inId;
 					image_info.m_name = inName;
 					image_info.m_second = inSecond;
-					m_total_images.push_back(image_info);
+					m_s_images[ins].push_back(image_info);
 				}
+
 
 				if (b_time_to_preview) {
 					OperateImageQueue(image.clone(), true);
@@ -329,23 +329,115 @@ bool NativeVision::GetImages(int inId, int inSecond, const std::string inName, b
 
 }
 
-//原始图像分析，切割出细胞
-void NativeVision::AnalyzeImages(const std::string inSampleName, const std::string inRootPath, bool insave_cell, bool save_original_img) {
-	m_total_cells.reserve(10000);
+////原始图像分析，切割出细胞
+//void NativeVision::AnalyzeImages(const std::string inSampleName, const std::string inRootPath, bool insave_cell, bool save_original_img) {
+//	m_total_cells.reserve(10000);
+//	int cell_num = 0;                       //代表样本中细胞数目编号
+//	std::vector<CellInfo> cellInfos;
+//	for (int i = 0; i < m_total_images.size(); ++i) {
+//		m_analyze_progress = static_cast<float>(i) / m_total_images.size();
+//		cellInfos = m_celldetect.GetResult(m_total_images[i].m_image);
+//		for (int j = 0; j < cellInfos.size(); ++j) {
+//			CellInfo cell_info = cellInfos[j];
+//			cell_info.m_second = m_total_images[i].m_second;
+//			//cell_info.m_class = Classify(cell_info.m_diameter);
+//			cell_info.m_id = m_total_images[i].m_id;
+//			cell_info.m_name = inSampleName + "_" + m_total_images[i].m_name + std::to_string(cell_num) + "_" + std::to_string(cell_info.m_class) + "_"  + ".bmp";
+//			m_total_cells.push_back(cell_info);
+//			cell_num++;
+//			std::filesystem::path root_path = std::filesystem::path(inRootPath) / std::filesystem::path(std::to_string(cell_info.m_id));
+//			//std::filesystem::path root_path = std::filesystem::path(inRootPath);
+//			if (!std::filesystem::exists(root_path)) {
+//				std::filesystem::create_directories(root_path);
+//			}
+//			std::filesystem::path save_path = root_path / std::filesystem::path(cell_info.m_name);
+//			cell_info.m_path = save_path.string();
+//			//m_log_window->AddLog("save img in %s \n", save_path.string().c_str());
+//			if (insave_cell) {
+//				cv::imwrite(save_path.string(), cell_info.m_image);
+//			}
+//		}
+//		if (save_original_img)
+//		{
+//			std::filesystem::path img_root_path = std::filesystem::path(inRootPath) / std::filesystem::path(std::string("raw"));
+//			if (!std::filesystem::exists(img_root_path)) {
+//				std::filesystem::create_directories(img_root_path);
+//			}
+//			std::filesystem::path save_path = img_root_path / std::filesystem::path(m_total_images[i].m_name + std::to_string(i) + ".bmp");
+//			cv::imwrite(save_path.string(), m_total_images[i].m_image);
+//		}
+//	}
+//	std::vector<ImageInfo> temp;
+//	m_total_images.swap(temp);
+//}
+
+
+float NativeVision::GetAnalyzeProgress() {
+	float sum = 0.0;
+	for (int i = 0; i < sizeof(m_analyze_progress); i++)
+	{
+		sum += m_analyze_progress[i];
+	}
+	return sum/10.0;
+}
+
+int NativeVision::GetTotalImageSize() {
+	int sum = 0.0;
+	for (int i = 0; i < sizeof(m_analyze_progress); i++)
+	{
+		sum += m_s_images[i].size();
+	}
+	return sum;
+}
+
+std::vector<CellInfo> NativeVision::GetTotalCells() {
+
+	for (int i = 0; i < sizeof(m_analyze_progress); i++)
+	{
+		m_total_cells.insert(m_total_cells.end(), m_s_cells[i].begin(), m_s_cells[i].end());
+		std::vector<CellInfo> temp_cell_infos;
+		m_s_cells[i].swap(temp_cell_infos);
+	}
+
+	return m_total_cells;
+}
+
+void NativeVision::Clear() {
+	std::vector<CellInfo> temp_cell_infos;
+	std::vector<ImageInfo> temp_images;
+	
+	m_total_cells.swap(temp_cell_infos);
+	m_total_images.swap(temp_images);
+
+	for (int i = 0; i < sizeof(m_analyze_progress); i++)
+	{
+		std::vector<CellInfo> temp_cell_infos;
+		m_s_cells[i].swap(temp_cell_infos);
+		std::vector<ImageInfo> temp_images;
+		m_s_images[i].swap(temp_images);
+	}
+
+	float m_analyze_progress[10] = { 0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0 };
+
+}
+
+
+//10个不同分析线程调用的函数
+void NativeVision::AnalyzeImages0_9(const std::string inSampleName, const std::string inRootPath, const int ins, bool insave_cell, bool save_original_img) {
+	m_s_cells[ins].reserve(10000);
 	int cell_num = 0;                       //代表样本中细胞数目编号
 	std::vector<CellInfo> cellInfos;
-	for (int i = 0; i < m_total_images.size(); ++i) {
-		m_analyze_progress = static_cast<float>(i) / m_total_images.size();
-		cellInfos = m_celldetect.GetResult(m_total_images[i].m_image);
+	for (int i = 0; i < m_s_images[ins].size(); ++i) {
+		m_analyze_progress[ins] = static_cast<float>(i) / m_s_images[ins].size();
+		cellInfos = m_celldetect.GetResult(m_s_images[ins][i].m_image);
 		for (int j = 0; j < cellInfos.size(); ++j) {
 			CellInfo cell_info = cellInfos[j];
-			cell_info.m_second = m_total_images[i].m_second;
+			cell_info.m_second = m_s_images[ins][i].m_second;
 			//cell_info.m_class = Classify(cell_info.m_diameter);
-			cell_info.m_id = m_total_images[i].m_id;
-			cell_info.m_name = inSampleName + "_" + std::to_string(cell_num) + "_" + std::to_string(cell_info.m_class) + "_" + m_total_images[i].m_name + ".bmp";
-			m_total_cells.push_back(cell_info);
+			cell_info.m_id = m_s_images[ins][i].m_id;
+			cell_info.m_name = inSampleName + "_" + m_s_images[ins][i].m_name + std::to_string(cell_num) + "_" + std::to_string(cell_info.m_class) + "_"  + ".bmp";
+			m_s_cells[ins].push_back(cell_info);
 			cell_num++;
-
 			std::filesystem::path root_path = std::filesystem::path(inRootPath) / std::filesystem::path(std::to_string(cell_info.m_id));
 			//std::filesystem::path root_path = std::filesystem::path(inRootPath);
 			if (!std::filesystem::exists(root_path)) {
@@ -357,41 +449,18 @@ void NativeVision::AnalyzeImages(const std::string inSampleName, const std::stri
 			if (insave_cell) {
 				cv::imwrite(save_path.string(), cell_info.m_image);
 			}
-
 		}
-
 		if (save_original_img)
 		{
 			std::filesystem::path img_root_path = std::filesystem::path(inRootPath) / std::filesystem::path(std::string("raw"));
 			if (!std::filesystem::exists(img_root_path)) {
 				std::filesystem::create_directories(img_root_path);
 			}
-			std::filesystem::path save_path = img_root_path / std::filesystem::path(m_total_images[i].m_name + std::to_string(i) + ".bmp");
-			cv::imwrite(save_path.string(), m_total_images[i].m_image);
+			std::filesystem::path save_path = img_root_path / std::filesystem::path(m_s_images[ins][i].m_name + std::to_string(i) + ".bmp");
+			cv::imwrite(save_path.string(), m_s_images[ins][i].m_image);
 		}
-
 	}
 	std::vector<ImageInfo> temp;
-	m_total_images.swap(temp);
+	m_s_images[ins].swap(temp);
 }
 
-float NativeVision::GetAnalyzeProgress() {
-	return m_analyze_progress;
-}
-
-int NativeVision::GetTotalImageSize() {
-	return m_total_images.size();
-}
-
-std::vector<CellInfo> NativeVision::GetTotalCells() {
-	return m_total_cells;
-}
-
-void NativeVision::Clear() {
-	std::vector<CellInfo> temp_cell_infos;
-	std::vector<ImageInfo> temp_images;
-	m_total_cells.swap(temp_cell_infos);
-	m_total_images.swap(temp_images);
-	m_analyze_progress = 0.0;
-
-}
