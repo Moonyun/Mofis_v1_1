@@ -374,7 +374,7 @@ bool NativeVision::GetImages(int inId, int inSecond, const std::string inName, b
 
 float NativeVision::GetAnalyzeProgress() {
 	float sum = 0.0;
-	for (int i = 0; i < sizeof(m_analyze_progress); i++)
+	for (int i = 0; i < 10; i++)
 	{
 		sum += m_analyze_progress[i];
 	}
@@ -383,7 +383,7 @@ float NativeVision::GetAnalyzeProgress() {
 
 int NativeVision::GetTotalImageSize() {
 	int sum = 0.0;
-	for (int i = 0; i < sizeof(m_analyze_progress); i++)
+	for (int i = 0; i<10; i++)
 	{
 		sum += m_s_images[i].size();
 	}
@@ -392,11 +392,17 @@ int NativeVision::GetTotalImageSize() {
 
 std::vector<CellInfo> NativeVision::GetTotalCells() {
 
-	for (int i = 0; i < sizeof(m_analyze_progress); i++)
+	for (int i = 0; i < 10; i++)
 	{
 		m_total_cells.insert(m_total_cells.end(), m_s_cells[i].begin(), m_s_cells[i].end());
+		
+	}
+
+	for (int i = 0; i < 10; i++)
+	{
 		std::vector<CellInfo> temp_cell_infos;
 		m_s_cells[i].swap(temp_cell_infos);
+
 	}
 
 	return m_total_cells;
@@ -409,12 +415,12 @@ void NativeVision::Clear() {
 	m_total_cells.swap(temp_cell_infos);
 	m_total_images.swap(temp_images);
 
-	for (int i = 0; i < sizeof(m_analyze_progress); i++)
+	for (int i = 0; i < 10; i++)
 	{
-		std::vector<CellInfo> temp_cell_infos;
-		m_s_cells[i].swap(temp_cell_infos);
-		std::vector<ImageInfo> temp_images;
-		m_s_images[i].swap(temp_images);
+		std::vector<CellInfo> temp_cell_infos0;
+		m_s_cells[i].swap(temp_cell_infos0);
+		std::vector<ImageInfo> temp_images0;
+		m_s_images[i].swap(temp_images0);
 	}
 
 	float m_analyze_progress[10] = { 0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0 };
@@ -462,5 +468,6 @@ void NativeVision::AnalyzeImages0_9(const std::string inSampleName, const std::s
 	}
 	std::vector<ImageInfo> temp;
 	m_s_images[ins].swap(temp);
+
 }
 

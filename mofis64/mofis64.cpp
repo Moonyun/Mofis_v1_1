@@ -464,7 +464,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 
         //状态参数更新传递
         g_status = StatusParamUpdata(g_flow_p0,g_flow_p1,sample_flowing);    //状态
-        if (g_status == 6) {                                       //计时并开始采集存储
+        if (g_status == 6 ) {                                       //计时并开始采集存储
             if (t_time_clock == 0) {
                 t_start = clock();
                 Sleep(1);               //暂停1ms，保证t_now和t_start不相等
@@ -478,6 +478,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
             g_GetImgs = false;
         }
         flow_pogress_1 = t_time_clock/ save_time;
+
         if (flow_pogress_1 > 0.99)
         {
             flow_pogress_1 = 1;
@@ -606,6 +607,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
             //    thread_analyze.detach();
             //    b_able_analyze = false;              //保证只分析一次
             //}
+
             if ((b_able_analyze0 && g_s==1))
             {
                 std::thread thread_analyze0(&NativeVision::AnalyzeImages0_9, Vision, "1", g_file_path,0, g_savecells, g_saveallimgs);
@@ -677,7 +679,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
                     }
                 }
 
-                //传入形态学参数到数组
+            //    //传入形态学参数到数组
 
                 std::vector<CellInfo> total_cells = Vision->GetTotalCells();
                 g_cell_total = total_cells.size();
@@ -1100,6 +1102,8 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
                         ImGui::EndTable();
                     }
                     ImGui::Text(u8"当前状态：%s",status_items[g_status]);
+                    ImGui::Text(u8"当前进度：%d", g_s);
+                   
                     ImGui::Text(" %.1f ms/frame (%.0f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
                     ImGui::EndTabItem();
                 }
