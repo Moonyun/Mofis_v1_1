@@ -1,13 +1,14 @@
 #include "NativeVision.h"
 
 NativeVision::NativeVision(LogWindows* pLogWindow)
-{
-	/*m_class_num = in_class_num;
-	m_detect_image_preview_num = in_detect_image_preview_num;*/
+{	
+	m_log_window = pLogWindow;                      //输出窗口
+	/*m_class_num = in_class_num;                   //分类种类
+	m_detect_image_preview_num = in_detect_image_preview_num;*/     //显示分类的种类
 	pStreamSource = NULL;
 	m_celldetect = CellDetect();
-	detect_images = std::vector<std::queue<cv::Mat>>(m_class_num, std::queue<cv::Mat>());
-	m_log_window = pLogWindow;
+	detect_images = std::vector<std::queue<cv::Mat>>(m_class_num, std::queue<cv::Mat>());    //切割出细胞的信息，包含图像与类别
+
 }
 
 NativeVision::NativeVision() {
@@ -20,11 +21,11 @@ NativeVision::~NativeVision()
 //设置相机参数
 bool NativeVision::SetCamParas(int inWidth, int inHeight, int inOffsetX, double inExposureTime, double inAcquisitionFrameRate) {
 	if (pCamera != NULL) {
+
 		return (
-			modifyCameraOffsetX(pCamera, 0) == 0 &&
 			modifyCameraWidth(pCamera, inWidth) == 0 &&
-			modifyCameraOffsetX(pCamera, inOffsetX) == 0 &&
 			modifyCameraHeight(pCamera, inHeight) == 0 &&
+			modifyCameraOffsetX(pCamera, inOffsetX) == 0 &&
 			modifyCameraExposureTime(pCamera, inExposureTime) == 0 &&
 			modifyCameraAcquisitionFrameRate(pCamera, inAcquisitionFrameRate) == 0
 			);
@@ -328,10 +329,10 @@ bool NativeVision::GetImages(int inId, int inSecond, const std::string inName, b
 
 }
 
-//原始图像分析
+//原始图像分析，切割出细胞
 void NativeVision::AnalyzeImages(const std::string inSampleName, const std::string inRootPath, bool insave_cell, bool save_original_img) {
 	m_total_cells.reserve(10000);
-	int cell_id = 0;
+	int cell_num = 0;                       //代表样本中细胞数目编号
 	std::vector<CellInfo> cellInfos;
 	for (int i = 0; i < m_total_images.size(); ++i) {
 		m_analyze_progress = static_cast<float>(i) / m_total_images.size();
@@ -339,14 +340,13 @@ void NativeVision::AnalyzeImages(const std::string inSampleName, const std::stri
 		for (int j = 0; j < cellInfos.size(); ++j) {
 			CellInfo cell_info = cellInfos[j];
 			cell_info.m_second = m_total_images[i].m_second;
-			cell_info.m_id = cell_id;
 			//cell_info.m_class = Classify(cell_info.m_diameter);
-			cell_info.m_class = 0;
-			cell_info.m_name = inSampleName + "_" + std::to_string(cell_id) + "_" + std::to_string(cell_info.m_class) + "_" + m_total_images[i].m_name + ".bmp";
+			cell_info.m_id = m_total_images[i].m_id;
+			cell_info.m_name = inSampleName + "_" + std::to_string(cell_num) + "_" + std::to_string(cell_info.m_class) + "_" + m_total_images[i].m_name + ".bmp";
 			m_total_cells.push_back(cell_info);
-			cell_id++;
+			cell_num++;
 
-			std::filesystem::path root_path = std::filesystem::path(inRootPath) / std::filesystem::path(std::to_string(cell_info.m_class));
+			std::filesystem::path root_path = std::filesystem::path(inRootPath) / std::filesystem::path(std::to_string(cell_info.m_id));
 			//std::filesystem::path root_path = std::filesystem::path(inRootPath);
 			if (!std::filesystem::exists(root_path)) {
 				std::filesystem::create_directories(root_path);

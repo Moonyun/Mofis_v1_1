@@ -51,6 +51,18 @@
     <ClInclude Include="Flowcam\IInterface.h">
       <Filter>头文件</Filter>
     </ClInclude>
+    <ClInclude Include="implot-master\implot.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="implot-master\implot_internal.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="ImGuiFileDialog-Lib_Only\ImGuiFileDialog.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="ImGuiFileDialog-Lib_Only\ImGuiFileDialogConfig.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="mofis64.cpp">
@@ -60,6 +72,21 @@
       <Filter>源文件</Filter>
     </ClCompile>
     <ClCompile Include="CellDetect.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="implot-master\implot.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="ImGuiFileDialog-Lib_Only\ImGuiFileDialog.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="stbimage\stb_image.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="implot-master\implot_demo.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="implot-master\implot_items.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>

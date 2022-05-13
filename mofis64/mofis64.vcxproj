@@ -42,7 +42,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
-    <PlatformToolset>v143</PlatformToolset>
+    <PlatformToolset>v142</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
@@ -159,6 +159,10 @@
     <ClInclude Include="CellDetect.h" />
     <ClInclude Include="Flowcam\IInterface.h" />
     <ClInclude Include="framework.h" />
+    <ClInclude Include="ImGuiFileDialog-Lib_Only\ImGuiFileDialog.h" />
+    <ClInclude Include="ImGuiFileDialog-Lib_Only\ImGuiFileDialogConfig.h" />
+    <ClInclude Include="implot-master\implot.h" />
+    <ClInclude Include="implot-master\implot_internal.h" />
     <ClInclude Include="laser_control.h" />
     <ClInclude Include="Logwindows.h" />
     <ClInclude Include="mofis64.h" />
@@ -170,8 +174,13 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="CellDetect.cpp" />
+    <ClCompile Include="ImGuiFileDialog-Lib_Only\ImGuiFileDialog.cpp" />
+    <ClCompile Include="implot-master\implot.cpp" />
+    <ClCompile Include="implot-master\implot_demo.cpp" />
+    <ClCompile Include="implot-master\implot_items.cpp" />
     <ClCompile Include="mofis64.cpp" />
     <ClCompile Include="NativeVision.cpp" />
+    <ClCompile Include="stbimage\stb_image.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="mofis64.rc" />

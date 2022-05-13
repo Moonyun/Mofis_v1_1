@@ -59,7 +59,7 @@ private:
 public:
     std::vector<CellInfo> GetResult(cv::Mat src) {
         std::vector<CellInfo> res;
-
+        CellInfo cellinfo;
         if (!src.data)
             std::cerr << "Problem loading image!!!" << std::endl;
         cv::Mat gray, edge, src_1, src_2, src_c, src_4;
@@ -108,9 +108,9 @@ public:
                 continue;
 
             cv::Point2f center;
-            float cell_dia = 0.0;
-            float cell_short_axis = 0.0;
-            float cell_long_axis = 0.0;
+            double cell_dia = 0.0;
+            double cell_short_axis = 0.0;
+            double cell_long_axis = 0.0;
             double cell_vol = 0.0;
             double cell_eccentricity = 0.0;
             double cell_roundness = 0.0;
@@ -126,8 +126,8 @@ public:
 
             cell_roundness = cell_area / pow(cell_peri, 2) * 4 * pi;
 
-
-            res.push_back({ roiImg, cell_area, cell_peri, cell_dia ,cell_short_axis * UM_PER_PIXEL,cell_long_axis * UM_PER_PIXEL,cell_vol,cell_eccentricity, cell_roundness });
+            cellinfo = { roiImg, cell_area, cell_peri, cell_dia ,cell_short_axis * UM_PER_PIXEL,cell_long_axis * UM_PER_PIXEL,cell_vol,cell_eccentricity, cell_roundness };
+            res.push_back(cellinfo);
         }
         return res;
 

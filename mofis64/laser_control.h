@@ -22,7 +22,7 @@ public:
     ~LaserControl();
     bool OpenLaser();
     bool CloseLaser();
-    bool SetParas(int inWidth, int inFrequency, int inIntensity , std::string inComname);
+    bool SetParas(int inWidth, int inFrequency, int inIntensity , std::string& inComname);
     bool BConnected();
 };
 
@@ -34,10 +34,10 @@ LaserControl::LaserControl(const std::string& inComName, int inWidth, int inFreq
     m_intensity = inIntensity;
     OpenLaser();
     if (ConnectLaser()) {
-        m_log_window->AddLog("connect laser %s success\n", m_com_name);
+        m_log_window->AddLog("connect laser %s success\n", m_com_name.c_str());
     }
     else {
-        m_log_window->AddLog("connect laser %s failed\n", m_com_name);
+        m_log_window->AddLog("connect laser %s failed\n", m_com_name.c_str());
 
     }
 }
@@ -157,7 +157,7 @@ bool LaserControl::CloseLaser() {
     unsigned int dianya, dianliu;
     data[cnt++] = 0xaa;
     data[cnt++] = 0x55;
-    heigh = (m_width + 100) / 5.0 + 0.5;
+    heigh = ((double)m_width + 100) / 5.0 + 0.5;
     low = (1000000000.0 / m_frequency) / 5.0 - heigh;
 
     dianya = m_intensity / 100.0 * (0x3ff - 0x01ff) + 0x01ff;
@@ -205,13 +205,13 @@ bool LaserControl::CloseLaser() {
     return Status;
 }
 
-bool LaserControl::SetParas(int inWidth, int inFrequency, int inIntensity, std::string inComname) {
-    m_log_window->AddLog("laser paras : before : %d %d %d %s\n", m_width, m_frequency, m_intensity,m_com_name);
+bool LaserControl::SetParas(int inWidth, int inFrequency, int inIntensity, std::string& inComname) {
+    m_log_window->AddLog("laser paras : before : %d %d %d %s\n", m_width, m_frequency, m_intensity,m_com_name.c_str());
     m_width = inWidth;
     m_frequency = inFrequency;
     m_intensity = inIntensity;
     m_com_name = inComname;
-    m_log_window->AddLog("laser paras : after  : %d %d %d %s\n", m_width, m_frequency, m_intensity,m_com_name);
+    m_log_window->AddLog("laser paras : after  : %d %d %d %s\n", m_width, m_frequency, m_intensity,m_com_name.c_str());
     return true;
 }
 
