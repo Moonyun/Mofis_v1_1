@@ -145,7 +145,7 @@ static int selectDevice(int cameraCnt) {
 	//printf("\nPlease input the camera index: ");
 	while (1) {
 		memset(inputStr, 0, sizeof(inputStr));
-		scanf("%s", inputStr);
+		//scanf("%s", inputStr);
 		fflush(stdin);
 		pTrimStr = trim(inputStr);
 		ret = isInputValid(pTrimStr);

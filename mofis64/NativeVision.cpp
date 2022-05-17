@@ -8,6 +8,12 @@ NativeVision::NativeVision(LogWindows* pLogWindow)
 	pStreamSource = NULL;
 	m_celldetect = CellDetect();
 	detect_images = std::vector<std::queue<cv::Mat>>(m_class_num, std::queue<cv::Mat>());    //切割出细胞的信息，包含图像与类别
+	for (int i = 0; i < 10; i++) {
+		std::vector<ImageInfo> tempImageInfos;
+		std::vector<CellInfo> tempCellInfos;
+		m_s_images.push_back(tempImageInfos);
+		m_s_cells.push_back(tempCellInfos);
+	}
 
 }
 
@@ -306,13 +312,13 @@ bool NativeVision::GetImages(int inId, int inSecond, const std::string inName, b
 					(uint8_t*)((pFrame->getImage(pFrame)))
 				);
 
-				if (inBGet) {
+				if (inBGet && ins < 10) {
 					ImageInfo image_info;
 					image_info.m_image = image.clone();
 					image_info.m_id = inId;
 					image_info.m_name = inName;
 					image_info.m_second = inSecond;
-					m_s_images[ins].push_back(image_info);
+					m_s_images.at(ins).push_back(image_info);
 				}
 
 
@@ -385,13 +391,13 @@ int NativeVision::GetTotalImageSize() {
 	int sum = 0.0;
 	for (int i = 0; i<10; i++)
 	{
-		sum += m_s_images[i].size();
+		sum += m_s_images.at(i).size();
 	}
 	return sum;
 }
 
 std::vector<CellInfo> NativeVision::GetTotalCells() {
-
+	m_total_cells.reserve(10000);
 	for (int i = 0; i < 10; i++)
 	{
 		m_total_cells.insert(m_total_cells.end(), m_s_cells[i].begin(), m_s_cells[i].end());
@@ -405,6 +411,7 @@ std::vector<CellInfo> NativeVision::GetTotalCells() {
 
 	}
 
+
 	return m_total_cells;
 }
 
@@ -417,32 +424,37 @@ void NativeVision::Clear() {
 
 	for (int i = 0; i < 10; i++)
 	{
-		std::vector<CellInfo> temp_cell_infos0;
-		m_s_cells[i].swap(temp_cell_infos0);
-		std::vector<ImageInfo> temp_images0;
-		m_s_images[i].swap(temp_images0);
-	}
+		std::vector<CellInfo> temp_cell_infos;
+		m_s_cells.at(i).swap(temp_cell_infos);
 
-	float m_analyze_progress[10] = { 0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0 };
+		std::vector<ImageInfo> temp_images;
+		m_s_images.at(i).swap(temp_images);
+
+		m_analyze_progress[i] = 0.0;
+	}
 
 }
 
 
 //10个不同分析线程调用的函数
 void NativeVision::AnalyzeImages0_9(const std::string inSampleName, const std::string inRootPath, const int ins, bool insave_cell, bool save_original_img) {
-	m_s_cells[ins].reserve(10000);
+	m_s_cells.at(ins).reserve(10000);
 	int cell_num = 0;                       //代表样本中细胞数目编号
 	std::vector<CellInfo> cellInfos;
-	for (int i = 0; i < m_s_images[ins].size(); ++i) {
-		m_analyze_progress[ins] = static_cast<float>(i) / m_s_images[ins].size();
-		cellInfos = m_celldetect.GetResult(m_s_images[ins][i].m_image);
+	CellInfo cell_info;
+	for (int i = 0; i < m_s_images.at(ins).size(); ++i) {
+		cell_num = 0;
+
+		m_analyze_progress[ins] = (static_cast<float>(i)+1) / m_s_images.at(ins).size();
+		cellInfos = m_celldetect.GetResult(m_s_images.at(ins)[i].m_image);
+
 		for (int j = 0; j < cellInfos.size(); ++j) {
-			CellInfo cell_info = cellInfos[j];
-			cell_info.m_second = m_s_images[ins][i].m_second;
+			cell_info = cellInfos[j];
+			cell_info.m_second = m_s_images.at(ins)[i].m_second;
 			//cell_info.m_class = Classify(cell_info.m_diameter);
-			cell_info.m_id = m_s_images[ins][i].m_id;
-			cell_info.m_name = inSampleName + "_" + m_s_images[ins][i].m_name + std::to_string(cell_num) + "_" + std::to_string(cell_info.m_class) + "_"  + ".bmp";
-			m_s_cells[ins].push_back(cell_info);
+			cell_info.m_id = m_s_images.at(ins)[i].m_id;
+			cell_info.m_name = inSampleName + "_" + m_s_images.at(ins)[i].m_name +"_"+ std::to_string(cell_num) + "_" + std::to_string(cell_info.m_class) + "_"  + ".bmp";
+			m_s_cells.at(ins).push_back(cell_info);
 			cell_num++;
 			std::filesystem::path root_path = std::filesystem::path(inRootPath) / std::filesystem::path(std::to_string(cell_info.m_id));
 			//std::filesystem::path root_path = std::filesystem::path(inRootPath);
@@ -462,12 +474,13 @@ void NativeVision::AnalyzeImages0_9(const std::string inSampleName, const std::s
 			if (!std::filesystem::exists(img_root_path)) {
 				std::filesystem::create_directories(img_root_path);
 			}
-			std::filesystem::path save_path = img_root_path / std::filesystem::path(m_s_images[ins][i].m_name + std::to_string(i) + ".bmp");
-			cv::imwrite(save_path.string(), m_s_images[ins][i].m_image);
+			std::filesystem::path save_path = img_root_path / std::filesystem::path(m_s_images.at(ins)[i].m_name + std::to_string(i) + ".bmp");
+			cv::imwrite(save_path.string(), m_s_images.at(ins)[i].m_image);
 		}
 	}
+
 	std::vector<ImageInfo> temp;
-	m_s_images[ins].swap(temp);
+	m_s_images.at(ins).swap(temp);
 
 }
 

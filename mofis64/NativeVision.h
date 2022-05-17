@@ -83,12 +83,9 @@ private:
 	int m_detect_image_preview_num;
 
 	std::vector<ImageInfo> m_total_images;
-	std::vector<ImageInfo> m_s_images[10];
-
-
 	std::vector<CellInfo> m_total_cells;
-
-	std::vector<CellInfo> m_s_cells[10];
+	std::vector<std::vector<ImageInfo>> m_s_images;
+	std::vector<std::vector<CellInfo>> m_s_cells;
 
 
 

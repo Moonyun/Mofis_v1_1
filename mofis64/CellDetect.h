@@ -27,7 +27,7 @@ using namespace std;
 using namespace cv;
 
 struct CellInfo {
-    cv::Mat m_image;
+    cv::Mat m_image = cv::Mat::zeros(1,1,0);
     double m_area;
     double m_perimeter;
     double m_diameter;
@@ -38,8 +38,8 @@ struct CellInfo {
     double m_roundness;
     int m_id;
     int m_second;
-    std::string m_name;
-    std::string m_path;
+    std::string m_name = "";
+    std::string m_path = "";
     int m_class;
 };
 
@@ -53,7 +53,7 @@ struct ImageInfo {
 class CellDetect
 {
 private:
-    int width = 100, height = 100;
+    int width = 200, height = 200;
     int img_w = 320, img_h = 480;
     float beta = 0.5;
 public:
@@ -67,7 +67,13 @@ public:
         resize(src, src_c, Size(0, 0), beta, beta, 4);
 
         boxFilter(src_c, src_1, -1, Size(3, 3));
-        threshold(src_1, src_2, 125, 255, THRESH_BINARY);
+
+        Scalar mean = cv::mean(src_1);
+        src_1 = src_1 + 140 - mean[0];
+
+        threshold(src_1, src_2, 110, 255, THRESH_BINARY);
+        dilate(src_2, src_2, getStructuringElement(2, Size(4, 4)));
+
         //waitKey(0);
         vector<vector<Point>> contours_small_img;
         findContours(255 - src_2, contours_small_img, RETR_EXTERNAL, CHAIN_APPROX_NONE);
@@ -92,14 +98,14 @@ public:
             if (rectPoint.center.x - width / 2 <= 0 || rectPoint.center.x + width / 2 > img_w - 1 || rectPoint.center.y - height / 2 <= 0 || rectPoint.center.y + height / 2 > img_h - 1)
                 continue;
 
-            /*if (rectPoint.center.x - width / 2 <= 0)
+            if (rectPoint.center.x - width / 2 <= 0)
                 rectPoint.center.x = width / 2 + 1;
             if (rectPoint.center.x + width / 2 > img_w - 1)
                 rectPoint.center.x = img_w - 1 - width / 2;
             if (rectPoint.center.y - height / 2 <= 0)
                 rectPoint.center.y = height / 2 + 1;
             if (rectPoint.center.y + height / 2 > img_h - 1)
-                rectPoint.center.y = img_h - 1 - height / 2;*/
+                rectPoint.center.y = img_h - 1 - height / 2;
 
             cv::Mat roiImg = src(Rect(rectPoint.center.x - width / 2, rectPoint.center.y - height / 2, width, height));
             float cell_peri = arcLength(contours_big_img[i], true) * UM_PER_PIXEL;     //ÇóÏ¸°ûÖÜ³¤
