@@ -10,6 +10,8 @@
 #include "LogWindows.h"
 #include "CellDetect.h"
 #include <filesystem>
+#include <mutex>
+#include <shared_mutex>
 
 using namespace cv;
 
@@ -33,7 +35,7 @@ struct filter_info {               //É¸Ñ¡Ìõ¼þ
 class NativeVision {
 public:
 	NativeVision();
-	NativeVision(LogWindows* pLogWindow);
+	NativeVision(LogWindows* pLogWindow, const int inThreadNums);
 	~NativeVision();
 	bool Init();
 	uint32_t GetDeviceNum();
@@ -48,6 +50,7 @@ public:
 	void InsertImageQueue(cv::Mat image, const std::string& imagePath);
 	bool SaveAsync();
 	cv::Mat OperateImageQueue(cv::Mat inImage, bool bInsert);
+	void InsertQueue(cv::Mat inImage);
 	std::vector<cv::Mat> OperateDetectImageQueue(cv::Mat inImage, bool bInsert, int in_class_index);
 	int Classify(double inDia);
 	int Filter(filter_info inSetfilter, const std::string inStore_path, vector<CellInfo> inTotalcellinfo);
@@ -59,22 +62,22 @@ public:
 
 private:
 
-	CellDetect m_celldetect;
 	std::string m_save_path;
 	int m_num;
 	GENICAM_StreamSource* pStreamSource;
 	GENICAM_Camera* pCamera = NULL;
-	std::mutex steamsource_mutex;
-	std::mutex image_path_mutex;
-	std::mutex image_mutex;
-	std::mutex images_mutex;
-	std::mutex detect_images_mutex;
+	std::shared_mutex steamsource_mutex;
+	std::shared_mutex image_path_mutex;
+	std::shared_mutex image_mutex;
+	std::shared_mutex images_mutex;
+	std::shared_mutex detect_images_mutex;
 	std::queue<std::string> image_path_queue;
 	std_time m_time_old = std::chrono::system_clock::now();
 	int image_preview_interval = 100;
 	int image_save_interval = 100;
 	std::queue<std::pair<cv::Mat, std::string> > image_queue;
 	std::queue<cv::Mat> images_queue;
+
 	std::vector<std::queue<cv::Mat>> detect_images;
 	bool m_bSaveAsync = false;
 	bool m_bSave = false;
@@ -84,12 +87,13 @@ private:
 
 	std::vector<ImageInfo> m_total_images;
 	std::vector<CellInfo> m_total_cells;
-	std::vector<std::vector<ImageInfo>> m_s_images;
+	std::vector < std::vector<ImageInfo>> m_s_images;
 	std::vector<std::vector<CellInfo>> m_s_cells;
 
 
-
-	float m_analyze_progress[10] = { 0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0 };
+	int m_thread_nums = 0;
+	std::vector<float> m_analyze_progress;
+	std::shared_mutex m_s_images_mutex;
 
 
 

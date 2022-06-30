@@ -98,8 +98,8 @@ static void displayDeviceInfo(GENICAM_Camera* pCameraList, int cameraCnt) {
 	return;
 }
 
-static int32_t GENICAM_connect(GENICAM_Camera* pGetCamera) {
-	int32_t isConnectSuccess;
+static int GENICAM_connect(GENICAM_Camera* pGetCamera) {
+	int isConnectSuccess;
 	isConnectSuccess = pGetCamera->connect(pGetCamera, accessPermissionControl);
 	if (isConnectSuccess != 0) {
 		//printf("connect camera failed.\n");
@@ -162,8 +162,8 @@ static int selectDevice(int cameraCnt) {
 	}
 	return inputIndex;
 }
-static int32_t modifyCameraHeight(GENICAM_Camera* pGetCamera, int inHeight) {
-	int32_t isIntNodeSuccess;
+static int modifyCameraHeight(GENICAM_Camera* pGetCamera, int inHeight) {
+	int isIntNodeSuccess;
 	int64_t HeightValue = 0;
 	GENICAM_IntNode* pIntNode = NULL;
 	GENICAM_IntNodeInfo intNodeInfo = { 0 };
@@ -203,8 +203,9 @@ static int32_t modifyCameraHeight(GENICAM_Camera* pGetCamera, int inHeight) {
 	return 0;
 }
 
-static int32_t modifyCameraOffsetX(GENICAM_Camera* pGetCamera, int inOffsetX) {
-	int32_t isIntNodeSuccess;
+
+static int modifyCameraOffsetX(GENICAM_Camera* pGetCamera, int inOffsetX) {
+	int isIntNodeSuccess;
 	int64_t OffsetXValue = 0;
 	GENICAM_IntNode* pIntNode = NULL;
 	GENICAM_IntNodeInfo intNodeInfo = { 0 };
@@ -244,8 +245,8 @@ static int32_t modifyCameraOffsetX(GENICAM_Camera* pGetCamera, int inOffsetX) {
 	return 0;
 }
 
-static int32_t modifyCameraWidth(GENICAM_Camera* pGetCamera, int inWidth) {
-	int32_t isIntNodeSuccess;
+static int modifyCameraWidth(GENICAM_Camera* pGetCamera, int64_t inWidth) {
+	int isIntNodeSuccess;
 	int64_t widthValue = 0;
 	GENICAM_IntNode* pIntNode = NULL;
 	GENICAM_IntNodeInfo intNodeInfo = { 0 };
@@ -265,6 +266,7 @@ static int32_t modifyCameraWidth(GENICAM_Camera* pGetCamera, int inWidth) {
 	}
 	else {
 		//printf("before change ,Width is %d\n", widthValue);
+		//pIntNode->release(pIntNode);
 	}
 	isIntNodeSuccess = pIntNode->setValue(pIntNode, inWidth);
 	if (0 != isIntNodeSuccess) {
@@ -284,8 +286,8 @@ static int32_t modifyCameraWidth(GENICAM_Camera* pGetCamera, int inWidth) {
 	}
 	return 0;
 }
-static int32_t modifyCameraAcquisitionFrameRate(GENICAM_Camera* pGetCamera, double inAcquisitionFrameRate) {
-	int32_t isDoubleNodeSuccess;
+static int modifyCameraAcquisitionFrameRate(GENICAM_Camera* pGetCamera, double inAcquisitionFrameRate) {
+	int isDoubleNodeSuccess;
 	double AcquisitionFrameRateValue = 0.0;
 	GENICAM_DoubleNode* pDoubleNode = NULL;
 	GENICAM_DoubleNodeInfo doubleNodeInfo = { 0 };
@@ -325,8 +327,8 @@ static int32_t modifyCameraAcquisitionFrameRate(GENICAM_Camera* pGetCamera, doub
 	return 0;
 }
 
-static int32_t modifyCameraExposureTime(GENICAM_Camera* pGetCamera, double inExposureTime) {
-	int32_t isDoubleNodeSuccess;
+static int modifyCameraExposureTime(GENICAM_Camera* pGetCamera, double inExposureTime) {
+	int isDoubleNodeSuccess;
 	double exposureTimeValue = 0.0;
 	GENICAM_DoubleNode* pDoubleNode = NULL;
 	GENICAM_DoubleNodeInfo doubleNodeInfo = { 0 };
@@ -365,8 +367,8 @@ static int32_t modifyCameraExposureTime(GENICAM_Camera* pGetCamera, double inExp
 	}
 	return 0;
 }
-static int32_t GENICAM_CreateStreamSource(GENICAM_Camera* pGetCamera, GENICAM_StreamSource** ppStreamSource) {
-	int32_t isCreateStreamSource;
+static int GENICAM_CreateStreamSource(GENICAM_Camera* pGetCamera, GENICAM_StreamSource** ppStreamSource) {
+	int isCreateStreamSource;
 	GENICAM_StreamSourceInfo stStreamSourceInfo;
 	stStreamSourceInfo.channelId = 0;
 	stStreamSourceInfo.pCamera = pGetCamera;
@@ -378,8 +380,8 @@ static int32_t GENICAM_CreateStreamSource(GENICAM_Camera* pGetCamera, GENICAM_St
 	return 0;
 }
 
-static int32_t GENICAM_startGrabbing(GENICAM_StreamSource* pStreamSource) {
-	int32_t isStartGrabbingSuccess;
+static int GENICAM_startGrabbing(GENICAM_StreamSource* pStreamSource) {
+	int isStartGrabbingSuccess;
 	GENICAM_EGrabStrategy eGrabStrategy;
 	eGrabStrategy = grabStrartegySequential;
 	//eGrabStrategy = grabStrartegyLatestImage;
@@ -390,8 +392,8 @@ static int32_t GENICAM_startGrabbing(GENICAM_StreamSource* pStreamSource) {
 	}
 	return 0;
 }
-static int32_t GENICAM_stopGrabbing(GENICAM_StreamSource* pStreamSource) {
-	int32_t isStopGrabbingSuccess;
+static int GENICAM_stopGrabbing(GENICAM_StreamSource* pStreamSource) {
+	int isStopGrabbingSuccess;
 	isStopGrabbingSuccess = pStreamSource->stopGrabbing(pStreamSource);
 	if (isStopGrabbingSuccess != 0) {
 		//printf("StopGrabbing  fail.\n");

@@ -56,7 +56,9 @@ bool g_savecells = TRUE;            //代表是否保存细胞图像
 bool g_saveallimgs = false;
 bool g_GetImgs = FALSE;              //代表是否保存相机照片，以作细胞切割
 
-std::string g_file_path ="";
+bool g_get = true;
+
+std::string g_file_path ="E:\\Data\\CameraImages\\20220610\\test";
 
 int g_cell_total;
 int g_img_total;
@@ -72,6 +74,11 @@ std::vector<float> g_cell_vol_array;
 std::vector<float> g_cell_ell_array;
 std::vector<float> g_cell_round_array;
 
+int g_cam_width = 480;
+int g_cam_height = 480;
+int g_cam_width_offset = 80;
+int g_cam_exposure = 171;
+int g_cam_fps = 2000;
 int g_detect_class_num = 3;                //预览细胞的种类，既行数
 int g_detect_preview_num = 8;
 //std::vector<std::vector<std::string> > g_detect_img_paths(g_detect_class_num, std::vector<std::string>(g_detect_preview_num, ""));
@@ -151,14 +158,15 @@ void GetImage(NativeVision* in_camera) {
     std::string old_time_str;
     struct tm time_info;
     time_t raw_time;
+    int image_id = 0;
     auto time_now = std::chrono::steady_clock::now();
     if (in_camera->Init()) {
-        in_camera->SetCamParas(320, 480, 160, 171, 2000);
+        in_camera->SetCamParas(g_cam_width, g_cam_height, g_cam_width_offset, g_cam_exposure, g_cam_fps);
         in_camera->StartCapture();
     }
-    while (true) {
+    while (g_get) {
         {
-            if (std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now() - time_now).count() > 1000) {
+            if (std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now() - time_now).count() > 1100) {
                 time_now = std::chrono::steady_clock::now();
                 time(&raw_time);
                 localtime_s(&time_info, &raw_time);
@@ -168,9 +176,13 @@ void GetImage(NativeVision* in_camera) {
                 {
                     old_time_str = std::string(time_info_buffer);
                     second++;
+                    image_id = 0;
                 }
-
-                if (in_camera->GetImages(g_posID, second, std::string(time_info_buffer), g_GetImgs , g_s)) {
+                else {
+                    image_id++;
+                }
+                std::string image_name = std::string(time_info_buffer) + "_" +std::to_string(image_id);
+                if (in_camera->GetImages(g_posID, second, image_name, g_GetImgs , g_s)) {
                     //g_img_per_second++;
                 }
             }
@@ -379,12 +391,13 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     enum Speed_Element { Element_1, Element_2, Element_3, Element_COUNT };           //流速选择
     int speed_array[3] = { 10,20,30 };
     int speed_current_elem = Element_1;
-    int save_time = (volume_array[volume_current] / speed_array[speed_current_elem]) * 60 * 1000;
+    //int save_time = (volume_array[volume_current] / speed_array[speed_current_elem]) * 60 * 1000;
+    int save_time = 40*1000;
     char save_time_cstr[128] ="";
     _itoa(save_time/1000, save_time_cstr,10);
 
-    char img_width_cstr[128] = "320";                                              //相机控制的参数，长宽像素，曝光，设置帧率
-    char img_offset_x_cstr[128] = "160";
+    char img_width_cstr[128] = "480";                                              //相机控制的参数，长宽像素，曝光，设置帧率
+    char img_offset_x_cstr[128] = "80";
     char img_height_cstr[128] = "480";
     char img_exposure_cstr[128] = "171";
     char img_acquisition_frame_rate_cstr[128] = "2000";
@@ -408,17 +421,8 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     float t_time_clock = 0;                         //代表已测试时间
     bool sample_flowing = FALSE;                    //点击开始测试到结束这段时间为Ture
     bool b_able_analyze = false;                     //样本测量结束后为ture，进入分析后变为false且其余时间为false
-    bool b_able_analyzes[10] = {false,false,false,false,false,false,false,false,false,false};
-    bool b_able_analyze0 = false;
-    bool b_able_analyze1 = false;
-    bool b_able_analyze2 = false;
-    bool b_able_analyze3 = false;
-    bool b_able_analyze4 = false;
-    bool b_able_analyze5 = false;
-    bool b_able_analyze6 = false;
-    bool b_able_analyze7 = false;
-    bool b_able_analyze8 = false;
-    bool b_able_analyze9 = false;
+    const int thread_nums = 40;
+    std::vector<bool> b_able_analyzes = std::vector<bool>(thread_nums,false);
     bool b_in_plot = false;
     float flow_pogress_1 = 0;                            //测试进度
     float analyze_progress_2 = 0;                        //分析进度
@@ -451,7 +455,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 
 
     LaserControl* laser = new LaserControl(serial_name, laser_width, laser_frequency, laser_intensity, g_LogWindow);   //激光
-    NativeVision* Vision = new NativeVision(g_LogWindow);                                                                      //相机
+    NativeVision* Vision = new NativeVision(g_LogWindow,thread_nums);                                                                      //相机
 
     GLuint tex_id_preview = 0;
 
@@ -480,13 +484,14 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
             t_now = clock();
             t_time_clock = (t_now-t_start) ;
             g_GetImgs = true;
+            progress_bar_color = orange_color;
         }
         else {
             g_GetImgs = false;
         }
         flow_pogress_1 = t_time_clock/ save_time;
 
-        if (flow_pogress_1 > 0.99)
+        if (flow_pogress_1 > 0.999)
         {
             flow_pogress_1 = 1;
             t_time_clock = save_time;
@@ -494,7 +499,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
         }
         analyze_progress_2 = Vision->GetAnalyzeProgress();
 
-        g_s = int(flow_pogress_1 / 0.1);
+        g_s = int(flow_pogress_1 * thread_nums);
 
         px = pos % 8 + 1;
         py = int(pos / 8) + 1;
@@ -534,7 +539,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
                     ImGui::PushID(r * 8 + c);
                     std::string AtoE[5] = { "A","B","C","D","E" };
                     std::string select_text = AtoE[r] + std::to_string(c + 1);
-                    if (ImGui::Selectable(select_text.c_str(), pos == (r * 8 + c), 0, ImVec2(35, 35))) {
+                    if (ImGui::Selectable(select_text.c_str(), pos == (r * 8 + c), 0, ImVec2(50, 35))) {
                         pos = r * 8 + c;
                     }
                     ImGui::PopID();
@@ -566,19 +571,9 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
                 sample_flowing = TRUE;   //样本开始流动
                 b_able_analyze = TRUE;  //可以分析，分析预准备
                 g_s = 0;
-                for (int i = 0; i < 10; i++) {
+                for (int i = 0; i < thread_nums; i++) {
                     b_able_analyzes[i] = true;
                 }
-                //b_able_analyze0 = true;
-                //b_able_analyze1 = true;
-                //b_able_analyze2 = true;
-                //b_able_analyze3 = true;
-                //b_able_analyze4 = true;
-                //b_able_analyze5 = true;
-                //b_able_analyze6 = true;
-                //b_able_analyze7 = true;
-                //b_able_analyze8 = true;
-                //b_able_analyze9 = true;
                 b_in_plot = true;
 
                 g_LogWindow->AddLog(u8"开始测试! \n");
@@ -611,11 +606,14 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 
 
             ImGui::SameLine();
-            if (ImGui::Button(u8"停止", ImVec2(current_region_width * 0.5f, 40)) ||(sample_flowing && t_time_clock > 0.99*save_time)) {
+            if (ImGui::Button(u8"停止", ImVec2(current_region_width * 0.5f, 40)) ||(sample_flowing && t_time_clock > 0.999*save_time)) {
                 sample_flowing = false;
                 g_GetImgs = false;
                 //g_progress = 0.0;
                 g_flow->StopCollect();
+                /*flow_pogress_1 = 1;
+                t_time_clock = save_time;
+                progress_bar_color = green_color;*/
             }
 
             //图像分析
@@ -626,79 +624,30 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
             //    b_able_analyze = false;              //保证只分析一次
             //}
             //std::vector< std::thread >thread_analyzes;
-            if (g_s > 0) {
-                for (int i = 0; i < 10; i++) {
+            /*if (g_s > 0) {
+                for (int i = 0; i < thread_nums; i++) {
 
                     if (b_able_analyzes[i] && g_s == i+1)
                     {
-                       std::thread th(&NativeVision::AnalyzeImages0_9, Vision, "1", g_file_path, i, g_savecells, g_saveallimgs);
+                       std::thread th(&NativeVision::AnalyzeImages0_9, Vision, std::to_string(g_posID), g_file_path, i, g_savecells, g_saveallimgs);
                        th.detach();
                        b_able_analyzes[i] = false;
                     }
                 }
+            }*/
+            if (g_s > 0) {
+                for (int i = 0; i < thread_nums; i++) {
+
+                    if (b_able_analyzes[i] && flow_pogress_1 == 1)
+                    {
+                        std::thread th(&NativeVision::AnalyzeImages0_9, Vision, std::to_string(g_posID), g_file_path, i, g_savecells, g_saveallimgs);
+                        th.detach();
+                        b_able_analyzes[i] = false;
+                    }
+                }
             }
 
-
-            //if ((b_able_analyze0 && g_s==1))
-            //{
-            //    std::thread thread_analyze0(&NativeVision::AnalyzeImages0_9, Vision, "1", g_file_path,0, g_savecells, g_saveallimgs);
-            //    thread_analyze0.detach();
-            //    b_able_analyze0 = false;              //保证只分析一次
-            //}
-            //if ((b_able_analyze1 && g_s == 2))
-            //{
-            //    std::thread thread_analyze1(&NativeVision::AnalyzeImages0_9, Vision, "1", g_file_path, 1, g_savecells, g_saveallimgs);
-            //    thread_analyze1.detach();
-            //    b_able_analyze1 = false;              //保证只分析一次
-            //}
-            //if ((b_able_analyze2 && g_s == 3))
-            //{
-            //    std::thread thread_analyze2(&NativeVision::AnalyzeImages0_9, Vision, "1", g_file_path, 2, g_savecells, g_saveallimgs);
-            //    thread_analyze2.detach();
-            //    b_able_analyze2 = false;              //保证只分析一次
-            //}
-            //if ((b_able_analyze3 && g_s == 4))
-            //{
-            //    std::thread thread_analyze3(&NativeVision::AnalyzeImages0_9, Vision, "1", g_file_path, 3, g_savecells, g_saveallimgs);
-            //    thread_analyze3.detach();
-            //    b_able_analyze3 = false;              //保证只分析一次
-            //}
-            //if ((b_able_analyze4 && g_s == 5))
-            //{
-            //    std::thread thread_analyze4(&NativeVision::AnalyzeImages0_9, Vision, "1", g_file_path, 4, g_savecells, g_saveallimgs);
-            //    thread_analyze4.detach();
-            //    b_able_analyze4 = false;              //保证只分析一次
-            //}
-            //if ((b_able_analyze5 && g_s == 6))
-            //{
-            //    std::thread thread_analyze5(&NativeVision::AnalyzeImages0_9, Vision, "1", g_file_path, 5, g_savecells, g_saveallimgs);
-            //    thread_analyze5.detach();
-            //    b_able_analyze5 = false;              //保证只分析一次
-            //}
-            //if ((b_able_analyze6 && g_s == 7))
-            //{
-            //    std::thread thread_analyze6(&NativeVision::AnalyzeImages0_9, Vision, "1", g_file_path, 6, g_savecells, g_saveallimgs);
-            //    thread_analyze6.detach();
-            //    b_able_analyze6 = false;              //保证只分析一次
-            //}
-            //if ((b_able_analyze7 && g_s == 8))
-            //{
-            //    std::thread thread_analyze7(&NativeVision::AnalyzeImages0_9, Vision, "1", g_file_path, 7, g_savecells, g_saveallimgs);
-            //    thread_analyze7.detach();
-            //    b_able_analyze7 = false;              //保证只分析一次
-            //}
-            //if ((b_able_analyze8 && g_s == 9))
-            //{
-            //    std::thread thread_analyze8(&NativeVision::AnalyzeImages0_9, Vision, "1", g_file_path, 8, g_savecells, g_saveallimgs);
-            //    thread_analyze8.detach();
-            //    b_able_analyze8 = false;              //保证只分析一次
-            //}
-            //if ((b_able_analyze9 && g_s == 10))
-            //{
-            //    std::thread thread_analyze9(&NativeVision::AnalyzeImages0_9, Vision, "1", g_file_path, 9, g_savecells, g_saveallimgs);
-            //    thread_analyze9.detach();
-            //    b_able_analyze9 = false;              //保证只分析一次
-            //}
+           
 
             //分析完成后导入数据
             if (Vision->GetTotalImageSize() == 0 && analyze_progress_2 == 1.0 && g_cell_dia_array.size() == 0 && b_in_plot) {
@@ -750,18 +699,28 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
                 t_time_clock = 0;
                 Vision->Clear();
                 flow_pogress_1 = 0;
+                //g_get = false;
+                //Sleep(20);
+                //Vision->StopCapture();
+                //delete Vision;
+                //Vision =  new NativeVision(g_LogWindow, thread_nums);
+                //g_get = true;
+                ////重新连接相机并获取相机照片
+                //std::thread thread_get_img = std::thread(GetImage, Vision);
+                //thread_get_img.detach();
                 g_LogWindow->AddLog(u8"清空成功! \n");
             }
 
             ImGui::Checkbox(u8"保存图片", &g_savecells);
-            ImGui::SameLine();
-            ImGui::Text(u8"当前样本编号: %d", g_posID);
-            ImGui::SameLine();
+            //ImGui::SameLine();
+
+            ImGui::InputInt(u8"样本编号", &g_posID);
+            /*ImGui::SameLine();
             if (ImGui::Button(u8"新建样本", ImVec2(current_region_width * 0.25f, 25)))
             {
                 g_posID++;
-            }
-            ImGui::Checkbox(u8"保存所有图片", &g_saveallimgs);
+            }*/
+            //ImGui::Checkbox(u8"保存所有图片", &g_saveallimgs);
             //ImGui::SameLine();
             if (std::filesystem::exists(g_file_path)) {
                 ImGui::Text(g_file_path.c_str());
@@ -778,6 +737,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
             ImGui::Begin("Preview", NULL, window_flags);            // 预览窗口
             // load preview image
             cv::Mat image_temp = Vision->OperateImageQueue(cv::Mat(), false);
+            //resize(image_temp,image_temp,Size(320,240),0,0,INTER_LINEAR);
             if (!image_temp.empty()) {
                 bool ret = LoadTextureFromImage(GrayToRGB(image_temp), &tex_id_preview);
             }
@@ -827,8 +787,8 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
                 time(&raw_time);
                 localtime_s(&time_info, &raw_time);
                 char time_info_buffer[100];
-                strftime(time_info_buffer, 100, "%G_%m_%d_%H%M%S.bmp", &time_info);
-                std::string res_path = (std::filesystem::path(desktop_path) / std::filesystem::path(std::string(time_info_buffer))).string();
+                strftime(time_info_buffer, 100, "%G_%m_%d_%H%M%S", &time_info);
+                std::string res_path = (std::filesystem::path(desktop_path) / std::filesystem::path(std::string(time_info_buffer)+"_"+ std::to_string(g_posID)+".bmp")).string();
                 g_LogWindow->AddLog(u8"保存： %s \n", res_path.c_str());
                 cv::imwrite(res_path, flipped);
 
@@ -1135,8 +1095,8 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
                         }
                         ImGui::EndTable();
                     }
-                    ImGui::Text(u8"当前状态：%s",status_items[g_status]);
-                    ImGui::Text(u8"当前进度：%d", g_s);
+                    //ImGui::Text(u8"当前状态：%s",status_items[g_status]);
+                    //ImGui::Text(u8"当前进度：%d", g_s);
                    
                     ImGui::Text(" %.1f ms/frame (%.0f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
                     ImGui::EndTabItem();
