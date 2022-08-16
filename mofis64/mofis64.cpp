@@ -56,9 +56,10 @@ bool g_savecells = TRUE;            //代表是否保存细胞图像
 bool g_saveallimgs = false;
 bool g_GetImgs = FALSE;              //代表是否保存相机照片，以作细胞切割
 
+bool g_connect_cam = FALSE;
 bool g_get = true;
 
-std::string g_file_path ="E:\\Data\\CameraImages\\20220610\\test";
+std::string g_file_path ="E:\\Data\\CameraImages\\HN\\20220816\\urine";
 
 int g_cell_total;
 int g_img_total;
@@ -77,7 +78,7 @@ std::vector<float> g_cell_round_array;
 int g_cam_width = 480;
 int g_cam_height = 480;
 int g_cam_width_offset = 80;
-int g_cam_exposure = 171;
+int g_cam_exposure = 170;
 int g_cam_fps = 2000;
 int g_detect_class_num = 3;                //预览细胞的种类，既行数
 int g_detect_preview_num = 8;
@@ -164,9 +165,11 @@ void GetImage(NativeVision* in_camera) {
         in_camera->SetCamParas(g_cam_width, g_cam_height, g_cam_width_offset, g_cam_exposure, g_cam_fps);
         in_camera->StartCapture();
     }
+
+
     while (g_get) {
         {
-            if (std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now() - time_now).count() > 1100) {
+            if (std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now() - time_now).count() > 1150) {
                 time_now = std::chrono::steady_clock::now();
                 time(&raw_time);
                 localtime_s(&time_info, &raw_time);
@@ -185,6 +188,7 @@ void GetImage(NativeVision* in_camera) {
                 if (in_camera->GetImages(g_posID, second, image_name, g_GetImgs , g_s)) {
                     //g_img_per_second++;
                 }
+               
             }
         }
     }
@@ -296,6 +300,7 @@ int StatusParamUpdata(int inFlow_p0, int inFlow_p1, bool inStart_flow)
     }
     else if (inFlow_p0 == 57 && inFlow_p1 == 14)                   //故障
     {return 14;}
+
     else{ return 15;}                                              //未知
     
 }
@@ -399,11 +404,11 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     char img_width_cstr[128] = "480";                                              //相机控制的参数，长宽像素，曝光，设置帧率
     char img_offset_x_cstr[128] = "80";
     char img_height_cstr[128] = "480";
-    char img_exposure_cstr[128] = "171";
+    char img_exposure_cstr[128] = "170";
     char img_acquisition_frame_rate_cstr[128] = "2000";
 
     char laser_frequency_cstr[128] = "5000";                                      //激光频率，脉宽，电流大小，串口
-    char laser_width_cstr[128] = "200";
+    char laser_width_cstr[128] = "100";
     char laser_intensity_cstr[128] = "100";
     int laser_frequency = atoi(laser_frequency_cstr);
     int laser_width = atoi(laser_width_cstr);
@@ -463,6 +468,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     std::thread thread_get_img = std::thread(GetImage, Vision);
     thread_get_img.detach();
 
+
     //分析函数的多线程
   /*  std::vector< std::thread > thread_analyzes;
     for (int i = 0; i < 10; i++)
@@ -473,7 +479,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 
     while (!glfwWindowShouldClose(window)) 
     {
-
+        
         //状态参数更新传递
         g_status = StatusParamUpdata(g_flow_p0,g_flow_p1,sample_flowing);    //状态
         if (g_status == 6 ) {                                       //计时并开始采集存储
@@ -635,6 +641,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
                     }
                 }
             }*/
+            //分析功能
             if (g_s > 0) {
                 for (int i = 0; i < thread_nums; i++) {
 

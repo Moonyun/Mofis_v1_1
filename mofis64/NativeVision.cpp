@@ -1,29 +1,43 @@
 #include "NativeVision.h"
 
 std::vector<CellInfo> GetResult(cv::Mat src) {
-	int width = 100, height = 100;
-	int img_w = 480, img_h = 480;
+	int width , height ;
+	int img_w = src.size().width;
+	int img_h = src.size().height;
 	float beta = 0.5;
+
+	float row1_mean , column1_mean;
+	int row1_sum = 0, column1_sum = 0;
 	std::vector<CellInfo> res;
 	CellInfo cellinfo;
-	/*if (!src.data)
-		std::cerr << "Problem loading image!!!" << std::endl;*/
 	cv::Mat gray, edge, src_1, src_2, src_c, src_4;
+	
+	//根据图像的第一列和最后一行的灰度值平均值判断图像的亮度是否正常
+	for (int i = 0; i < img_w; i++) {
+		row1_sum += src.at<uchar>(img_h-1,i);            //求最后一行像素和
+	}
+	row1_mean = row1_sum/ img_w;
+	for (int i = 0; i < img_h; i++) {
+		column1_sum += src.at<uchar>(i,0);            //求第一列像素和
+	}
+	column1_mean = column1_sum/ img_h;
+	if(row1_mean<150 && column1_mean<163)             //像素太暗，光照有问题，返回空
+	    return res;
 
-	resize(src, src_c, Size(0, 0), beta, beta, 4);
-
-	boxFilter(src_c, src_1, -1, Size(3, 3));
-
+	resize(src, src_c, Size(0, 0), beta, beta, 4);    //缩放图片，提高运算速度
+	boxFilter(src_c, src_1, -1, Size(3, 3));           //滤波
 	Scalar mean = cv::mean(src_1);
-	src_1 = src_1 + 140 - mean[0];
-
-	threshold(src_1, src_2, 110, 255, THRESH_BINARY);
-	dilate(src_2, src_2, getStructuringElement(2, Size(4, 4)));
+	src_1 = src_1 + 130 - mean[0];                     //调整灰度值
+	threshold(src_1, src_2, 100, 255, THRESH_BINARY);           //二值化
+	dilate(src_2, src_2, getStructuringElement(2, Size(4, 4)));         //图像膨胀
 
 	//waitKey(0);
+
+	//threshold(src_c, src_2, 240, 255, THRESH_BINARY);
+
 	vector<vector<Point>> contours_small_img;
 	findContours(255 - src_2, contours_small_img, RETR_EXTERNAL, CHAIN_APPROX_NONE);
-	if (!contours_small_img.size())
+	if (!contours_small_img.size())            //不存在细胞
 		return res;
 
 	Mat src_3 = Mat::zeros(src_2.size(), CV_8U);
@@ -36,34 +50,49 @@ std::vector<CellInfo> GetResult(cv::Mat src) {
 	vector<Vec4i> hierarchys;
 	findContours(src_4, contours_big_img, hierarchys,
 		cv::RETR_EXTERNAL, cv::CHAIN_APPROX_SIMPLE, Point(0, 0));  //寻找轮廓
+
 	for (unsigned int i = 0; i < contours_big_img.size(); ++i)
 	{
 		float cell_area = contourArea(contours_big_img[i]) * UM_2_PER_PIXEL;          //求细胞面积
 
+		double cell_dia = 0.0;
+		cell_dia = 2 * sqrt(cell_area / pi);                //等效直径
+
 		RotatedRect rectPoint = minAreaRect(contours_big_img[i]);
 
-		if (rectPoint.center.x - width / 2 <= 0 || rectPoint.center.x + width / 2 > img_w - 1 || rectPoint.center.y - height / 2 <= 0 || rectPoint.center.y + height / 2 > img_h - 1)
-			continue;
+		//if (cell_dia<=10)                                //根据直径调整切割图片大小
+		//	width = 100,height = 100;
+		//else if(cell_dia>10 && cell_dia <=20)
+		//	width = 200, height = 200;
+		//else if(cell_dia>20 && cell_dia <= 30)
+		//	width = 300, height = 300;
+		//else if(cell_dia>30 && cell_dia<=40)
+		//	width = 400, height = 400;
+		//else
+		//	width = 480, height = 480;
+		//if (rectPoint.center.x - width / 2 <= 0 || rectPoint.center.x + width / 2 > img_w - 1 || rectPoint.center.y - height / 2 <= 0 || rectPoint.center.y + height / 2 > img_h - 1)
+		//	continue;
 
-		if (rectPoint.center.x - width / 2 <= 0)
-			rectPoint.center.x = width / 2 + 1;
-		if (rectPoint.center.x + width / 2 > img_w - 1)
-			rectPoint.center.x = img_w - 1 - width / 2;
-		if (rectPoint.center.y - height / 2 <= 0)
-			rectPoint.center.y = height / 2 + 1;
-		if (rectPoint.center.y + height / 2 > img_h - 1)
-			rectPoint.center.y = img_h - 1 - height / 2;
+		//if (rectPoint.center.x - width / 2 <= 0)
+		//	rectPoint.center.x = width / 2 + 1;
+		//if (rectPoint.center.x + width / 2 > img_w - 1)
+		//	rectPoint.center.x = img_w - 1 - width / 2;
+		//if (rectPoint.center.y - height / 2 <= 0)
+		//	rectPoint.center.y = height / 2 + 1;
+		//if (rectPoint.center.y + height / 2 > img_h - 1)
+		//	rectPoint.center.y = img_h - 1 - height / 2;
 
-		cv::Mat roiImg = src(Rect(rectPoint.center.x - width / 2, rectPoint.center.y - height / 2, width, height));
-		//cv::Mat roiImg = src;               //不分割，直接保存原图；
+		//cv::Mat roiImg = src(Rect(rectPoint.center.x - width / 2, rectPoint.center.y - height / 2, width, height));
+
+		cv::Mat roiImg = src;               //不分割，直接保存原图；
+
 		float cell_peri = arcLength(contours_big_img[i], true) * UM_PER_PIXEL;     //求细胞周长
 
-		if (cell_peri > 900.0 || cell_peri < 6)
+		if (cell_dia > 50 || cell_dia < 1)
 			//roiImg.release();
 			continue;
 
 		cv::Point2f center;
-		double cell_dia = 0.0;
 		double cell_short_axis = 0.0;
 		double cell_long_axis = 0.0;
 		double cell_vol = 0.0;
@@ -73,7 +102,7 @@ std::vector<CellInfo> GetResult(cv::Mat src) {
 		ell = minAreaRect(contours_big_img[i]);
 		cell_short_axis = MIN(ell.size.height, ell.size.width);
 		cell_long_axis = MAX(ell.size.height, ell.size.width);
-		cell_dia = 2 * sqrt(cell_area / pi);                //等效直径
+
 		//cell_dia = UM_PER_PIXEL*(cell_short_axis+ cell_long_axis)/2;               
 		cell_vol = pow(cell_dia, 3) * pi / 6;    //等效体积
 		cell_eccentricity = (cell_long_axis - cell_short_axis) / cell_long_axis;   //根据长短轴求偏心率
@@ -82,6 +111,7 @@ std::vector<CellInfo> GetResult(cv::Mat src) {
 
 		cellinfo = { roiImg, cell_area, cell_peri, cell_dia ,cell_short_axis * UM_PER_PIXEL,cell_long_axis * UM_PER_PIXEL,cell_vol,cell_eccentricity, cell_roundness };
 		res.push_back(cellinfo);
+		break;         //只push一次，保留一张图片
 		//roiImg.release();
 	}
 	//释放cv::mat
@@ -409,7 +439,7 @@ bool NativeVision::GetImages(int inId, int inSecond, const std::string inName, b
 				if (ret < 0) {
 					m_log_window->AddLog("getFrame  fail.\n");
 					this->StopCapture();
-					Sleep(1);
+					Sleep(2);
 					this->StartCapture();
 					return false;
 				}
@@ -428,6 +458,7 @@ bool NativeVision::GetImages(int inId, int inSecond, const std::string inName, b
 				);
 
 				if (inBGet && ins < m_thread_nums) {
+					
 					ImageInfo image_info;
 					image_info.m_image = image.clone();
 					image_info.m_id = inId;
@@ -563,6 +594,25 @@ void NativeVision::AnalyzeImages0_9(const std::string inSampleName, const std::s
 		current_images = &(m_s_images[ins]);
 	}
 	clock_t t_start = clock();
+
+	//求取背景图片
+	cv::Mat backgd_image;
+	double min = 0;
+	for (int i = 0; i < 20; ++i) {
+
+		cv::Mat temp_image;
+		{
+			temp_image = current_images->at(i).m_image;
+		}
+
+		Scalar mean = cv::mean(temp_image);
+		if (mean[0] > min) {
+			min = mean[0];
+			backgd_image = temp_image;
+		}
+	}
+
+
 	for (int i = 0; i < current_images->size(); ++i) {
 		//m_log_window->AddLog("%d in %d of %d \n", ins,i, current_images.size());
 
@@ -574,7 +624,8 @@ void NativeVision::AnalyzeImages0_9(const std::string inSampleName, const std::s
 			//std::shared_lock<std::shared_mutex> m_s_images_guard(m_s_images_mutex);
 			temp_image = current_images->at(i).m_image;
 		}
-		cellInfos =GetResult(temp_image);
+		cellInfos =GetResult(temp_image);  //修改确定是否去背景
+
 		temp_image.release();
 
 		for (int j = 0; j < cellInfos.size(); ++j) {
@@ -609,6 +660,7 @@ void NativeVision::AnalyzeImages0_9(const std::string inSampleName, const std::s
 		}
 	}
 
+	backgd_image.release();             //背景图片释放
 	int time = clock()- t_start;
 	m_log_window->AddLog("%d completed %d - %d -----------------------\n", ins, time, current_images->size());
 
